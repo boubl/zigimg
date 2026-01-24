@@ -55,10 +55,7 @@ pub fn ScaleValue(comptime T: type) fn (anytype) T {
                                 // In order to fit `value * out_max` we need an
                                 // int of size `in_bits + out_bits` in the worst
                                 // case scenario.
-                                const FitInt = @Type(.{ .int = .{
-                                    .bits = in_bits + out_bits,
-                                    .signedness = .unsigned,
-                                } });
+                                const FitInt = @Int(.unsigned, in_bits + out_bits);
 
                                 return @truncate((@as(FitInt, value) * out_max + in_max / 2) / in_max);
                             } else return value;
@@ -395,7 +392,7 @@ fn ToMethods(
     return packed struct(u0) {
         const To = @This();
 
-        fn getSelf(to: *const To) *align(1) const T {
+        fn getSelf(to: anytype) *align(1) const T {
             // @fieldParentPtr is broken for packed structs.
             // See: https://github.com/ziglang/zig/issues/20458
             if (@typeInfo(T).@"struct".layout == .@"packed") {
@@ -408,47 +405,47 @@ fn ToMethods(
         }
 
         /// Assumes the target color type has `FromMethods` for it.
-        pub fn color(to: *const To, ColorT: type) ColorT {
-            return ColorT.from.color(to.getSelf().*);
+        pub fn color(to: anytype, ColorT: type) ColorT {
+            return ColorT.from.color(getSelf(to).*);
         }
 
-        pub fn u32Rgba(to: *const To) u32 {
-            const self = to.getSelf();
+        pub fn u32Rgba(to: anytype) u32 {
+            const self = getSelf(to);
             return @as(u32, toU8(self.r)) << 24 |
                 @as(u32, toU8(self.g)) << 16 |
                 @as(u32, toU8(self.b)) << 8 |
                 if (has_alpha) toU8(self.a) else 0xff;
         }
 
-        pub fn u32Rgb(to: *const To) u32 {
-            const self = to.getSelf();
+        pub fn u32Rgb(to: anytype) u32 {
+            const self = getSelf(to);
             return @as(u32, toU8(self.r)) << 16 |
                 @as(u32, toU8(self.g)) << 8 |
                 toU8(self.b);
         }
 
-        pub fn u64Rgba(to: *const To) u64 {
-            const self = to.getSelf();
+        pub fn u64Rgba(to: anytype) u64 {
+            const self = getSelf(to);
             return @as(u64, toU16(self.r)) << 48 |
                 @as(u64, toU16(self.g)) << 32 |
                 @as(u64, toU16(self.b)) << 16 |
                 if (has_alpha) toU16(self.a) else 0xffff;
         }
 
-        pub fn u64Rgb(to: *const To) u64 {
-            const self = to.getSelf();
+        pub fn u64Rgb(to: anytype) u64 {
+            const self = getSelf(to);
             return @as(u64, toU16(self.r)) << 32 |
                 @as(u64, toU16(self.g)) << 16 |
                 toU16(self.b);
         }
 
         /// Only valid for color types where all channels are the same type.
-        pub fn array(to: *const To) [4]RedT {
+        pub fn array(to: anytype) [4]RedT {
             if (comptime multiple_channel_types) {
                 @compileError("Color.to.array may only be used when all channels in the color are the same type.");
             }
 
-            const self = to.getSelf();
+            const self = getSelf(to);
 
             return .{
                 self.r,
@@ -461,8 +458,8 @@ fn ToMethods(
             };
         }
 
-        pub fn float4(to: *const To) math.float4 {
-            const self = to.getSelf();
+        pub fn float4(to: anytype) math.float4 {
+            const self = getSelf(to);
 
             return .{
                 toF32(self.r),
@@ -477,8 +474,8 @@ fn ToMethods(
 
         /// For int channels, premultiplication
         /// is done with a round-trip to f32.
-        pub fn premultipliedAlpha(to: *const To) T {
-            const self = to.getSelf();
+        pub fn premultipliedAlpha(to: anytype) T {
+            const self = getSelf(to);
             var res = self.*;
             if (!has_alpha) return res;
 

@@ -78,8 +78,10 @@ pub fn vpermd(v: @Vector(8, i32), mask: @Vector(8, i32)) @Vector(8, i32) {
               [v] "x" (v),
         );
     } else {
-        var res: @Vector(8, i32) = undefined;
-        inline for (0..8) |i| res[i] = v[@as(u32, @bitCast(mask[i]))];
+        const v_arr: [8]i32 = v;
+        const mask_arr: [8]i32 = mask;
+        var res: [8]i32 = undefined;
+        for (0..8) |i| res[i] = v_arr[@intCast(mask_arr[i] & 7)];
         return res;
     }
 }

@@ -20,14 +20,16 @@ width: usize = 0,
 height: usize = 0,
 pixels: color.PixelStorage = .{ .invalid = void{} },
 animation: Animation = .{},
+io: std.Io = undefined,
 allocator: std.mem.Allocator = undefined, // Allocator needs to be last in order to be able to ptrCast to Image
 
 const Managed = @This();
 
 /// Init an empty image with no pixel data
-pub fn init(allocator: std.mem.Allocator) Managed {
+pub fn init(allocator: std.mem.Allocator, io: std.Io) Managed {
     return Managed{
         .allocator = allocator,
+        .io = io,
     };
 }
 
@@ -37,13 +39,13 @@ pub fn deinit(self: *Managed) void {
 }
 
 /// Detect which image format is used by the file path
-pub fn detectFormatFromFilePath(file_path: []const u8, read_buffer: []u8) !Format {
-    return Image.detectFormatFromFilePath(file_path, read_buffer);
+pub fn detectFormatFromFilePath(io: std.Io, file_path: []const u8, read_buffer: []u8) !Format {
+    return Image.detectFormatFromFilePath(io, file_path, read_buffer);
 }
 
 /// Detect which image format is used by the file
-pub fn detectFormatFromFile(file: std.fs.File, read_buffer: []u8) !Format {
-    return Image.detectFormatFromFile(file, read_buffer);
+pub fn detectFormatFromFile(io: std.Io, file: std.Io.File, read_buffer: []u8) !Format {
+    return Image.detectFormatFromFile(io, file, read_buffer);
 }
 
 /// Detect which image format is used by the memory buffer
@@ -52,13 +54,13 @@ pub fn detectFormatFromMemory(buffer: []const u8) !Format {
 }
 
 /// Load an image from a file path
-pub fn fromFilePath(allocator: std.mem.Allocator, file_path: []const u8, read_buffer: []u8) !Managed {
-    return (try Image.fromFilePath(allocator, file_path, read_buffer)).toManaged(allocator);
+pub fn fromFilePath(allocator: std.mem.Allocator, io: std.Io, file_path: []const u8, read_buffer: []u8) !Managed {
+    return (try Image.fromFilePath(allocator, io, file_path, read_buffer)).toManaged(allocator);
 }
 
-/// Load an image from a standard library std.fs.File
-pub fn fromFile(allocator: std.mem.Allocator, file: std.fs.File, read_buffer: []u8) !Managed {
-    return (try Image.fromFile(allocator, file, read_buffer)).toManaged(allocator);
+/// Load an image from a standard library std.Io.File
+pub fn fromFile(allocator: std.mem.Allocator, io: std.Io, file: std.Io.File, read_buffer: []u8) !Managed {
+    return (try Image.fromFile(allocator, io, file, read_buffer)).toManaged(allocator);
 }
 
 /// Load an image from a memory buffer
@@ -116,12 +118,12 @@ pub fn isAnimation(self: Managed) bool {
 
 /// Write the image to an image format to the specified path
 pub fn writeToFilePath(self: Managed, file_path: []const u8, write_buffer: []u8, encoder_options: EncoderOptions) WriteError!void {
-    return Image.writeToFilePath(self.toUnmanaged(), self.allocator, file_path, write_buffer, encoder_options);
+    return Image.writeToFilePath(self.toUnmanaged(), self.allocator, self.io, file_path, write_buffer, encoder_options);
 }
 
-/// Write the image to an image format to the specified std.fs.File
-pub fn writeToFile(self: Managed, file: std.fs.File, write_buffer: []u8, encoder_options: EncoderOptions) WriteError!void {
-    return Image.writeToFile(self.toUnmanaged(), self.allocator, file, write_buffer, encoder_options);
+/// Write the image to an image format to the specified std.Io.File
+pub fn writeToFile(self: Managed, file: std.Io.File, write_buffer: []u8, encoder_options: EncoderOptions) WriteError!void {
+    return Image.writeToFile(self.toUnmanaged(), self.allocator, file, self.io, write_buffer, encoder_options);
 }
 
 /// Write the image to an image format in a memory buffer. The memory buffer is not grown

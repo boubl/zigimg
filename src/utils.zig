@@ -4,7 +4,7 @@ const std = @import("std");
 const native_endian = builtin.target.cpu.arch.endian();
 
 pub const StructReadError = error{InvalidData} || std.Io.Reader.Error;
-pub const StructWriteError = std.io.StreamSource.WriteError;
+pub const StructWriteError = std.Io.Writer.Error;
 
 pub fn FixedStorage(comptime T: type, comptime storage_size: usize) type {
     return struct {
